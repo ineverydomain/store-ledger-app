@@ -1,9 +1,15 @@
 [build]
-  publish = "dist"
   command = "npm run build"
+  functions = "netlify/functions"
+  publish = "dist"
 
 [build.environment]
   NODE_VERSION = "18"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
 
 [[redirects]]
   from = "/*"
@@ -11,7 +17,4 @@
   status = 200
 
 [context.production.environment]
-  VITE_API_URL = "https://store-ledger-api.up.railway.app/api"
-
-[context.deploy-preview.environment]
-  VITE_API_URL = "https://store-ledger-api.up.railway.app/api"
+  VITE_API_URL = "/api"
