@@ -5,7 +5,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
 const morgan = require('morgan');
-require('dotenv').config();
+require('dotenv').config(); // This must be at the very top to load .env variables
 
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
@@ -38,9 +38,10 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Database connection
+// MONGODB_URI is read from process.env, which is loaded by dotenv
 mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
+    // useNewUrlParser: true,  // Deprecated in Mongoose 6+
+    // useUnifiedTopology: true, // Deprecated in Mongoose 6+
 })
 .then(() => console.log('Connected to MongoDB'))
 .catch((err) => console.error('MongoDB connection error:', err));
@@ -52,8 +53,8 @@ app.use('/api/sales', salesRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'OK', 
+  res.status(200).json({
+    status: 'OK',
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
   });
@@ -67,14 +68,10 @@ app.use('*', (req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
+// Server listening
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-});
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
 });
 
 module.exports = app;
