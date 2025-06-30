@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: store-ledger-backend
+    env: node
+    rootDir: project/backend
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - fromDotEnv: true
+
+  - type: web
+    name: store-ledger-frontend
+    env: static
+    rootDir: project
+    buildCommand: npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_BACKEND_URL
+        value: https://store-ledger-backend.onrender.com
