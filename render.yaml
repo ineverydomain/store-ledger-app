@@ -8,7 +8,10 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - fromDotEnv: true
+      - key: PORT
+        value: 5000
+      - key: MONGO_URI
+        value: YOUR_MONGODB_CONNECTION_STRING
 
   - type: web
     name: store-ledger-frontend
