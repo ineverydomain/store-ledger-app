@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
 const morgan = require('morgan');
+const path = require('path'); // ✅ Needed for serving static files
 require('dotenv').config(); // This must be at the very top to load .env variables
 
 const authRoutes = require('./routes/auth');
@@ -22,7 +23,7 @@ app.use(morgan('combined'));
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 100,
   message: 'Too many requests from this IP, please try again later.',
 });
 app.use('/api/', limiter);
@@ -38,20 +39,16 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Database connection
-// MONGODB_URI is read from process.env, which is loaded by dotenv
-mongoose.connect(process.env.MONGODB_URI, {
-    // useNewUrlParser: true,  // Deprecated in Mongoose 6+
-    // useUnifiedTopology: true, // Deprecated in Mongoose 6+
-})
-.then(() => console.log('Connected to MongoDB'))
-.catch((err) => console.error('MongoDB connection error:', err));
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('Connected to MongoDB'))
+  .catch((err) => console.error('MongoDB connection error:', err));
 
-// Routes
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/sales', salesRoutes);
 
-// Health check endpoint
+// Health check
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'OK',
@@ -60,15 +57,24 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Error handling middleware
+// ✅ Serve frontend (dist folder) in production
+const __dirname = path.resolve();
+app.use(express.static(path.join(__dirname, 'dist')));
+
+// ✅ Handle all other routes (except /api) with index.html
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
+
+// Error handler
 app.use(errorHandler);
 
-// 404 handler
+// 404 handler for API (optional)
 app.use('*', (req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-// Server listening
+// Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
