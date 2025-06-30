@@ -1,54 +1,50 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const compression = require('compression');
-const morgan = require('morgan');
-const path = require('path'); // ✅ Needed for serving static files
-require('dotenv').config(); // This must be at the very top to load .env variables
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import compression from 'compression';
+import morgan from 'morgan';
+import path from 'path';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
 
-const authRoutes = require('./routes/auth');
-const productRoutes = require('./routes/products');
-const salesRoutes = require('./routes/sales');
-const { errorHandler } = require('./middleware/errorHandler');
+import authRoutes from './routes/auth.js';
+import productRoutes from './routes/products.js';
+import salesRoutes from './routes/sales.js';
+import { errorHandler } from './middleware/errorHandler.js';
+
+dotenv.config();
 
 const app = express();
 
-// Security middleware
 app.use(helmet());
 app.use(compression());
 app.use(morgan('combined'));
 
-// Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000,
   max: 100,
   message: 'Too many requests from this IP, please try again later.',
 });
 app.use('/api/', limiter);
 
-// CORS configuration
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true,
 }));
 
-// Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Database connection
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('Connected to MongoDB'))
   .catch((err) => console.error('MongoDB connection error:', err));
 
-// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/sales', salesRoutes);
 
-// Health check
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'OK',
@@ -57,27 +53,24 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// ✅ Serve frontend (dist folder) in production
-const __dirname = path.resolve();
-app.use(express.static(path.join(__dirname, 'dist')));
+// Serve static frontend
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// ✅ Handle all other routes (except /api) with index.html
+app.use(express.static(path.join(__dirname, '../dist')));
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  res.sendFile(path.join(__dirname, '../dist', 'index.html'));
 });
 
-// Error handler
+// Error handling
 app.use(errorHandler);
 
-// 404 handler for API (optional)
 app.use('*', (req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-// Start server
 const PORT = process.env.PORT || 3000;
+console.log('✅ PORT:', PORT);
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
-
-module.exports = app;
